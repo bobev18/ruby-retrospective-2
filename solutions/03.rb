@@ -35,30 +35,55 @@ class Expr
     end
   end
 
-  def simplify
-    case @tree[0]
-      when :* then 
-        if Expr.build(@tree[1]).simplify==Expr.build([:number, 0]) or 
-            Expr.build(@tree[2]).simplify==Expr.build([:number, 0]) then
-            Expr.build([:number, 0])
-        elsif Expr.build(@tree[1]).simplify==Expr.build([:number, 1]) then
-          Expr.build(@tree[2]).simplify
-        elsif Expr.build(@tree[2]).simplify==Expr.build([:number, 1]) then
-          Expr.build(@tree[1]).simplify
-        else self
+  def mysimplify(tree)
+    case tree[0]
+      when :variable, :number then tree
+      when :*
+        if mysimplify(tree[1])==[:number, 0] or mysimplify(tree[2])==[:number, 0] then [:number, 0]
+        elsif mysimplify(tree[1])==[:number, 1] then mysimplify(tree[2])
+        elsif mysimplify(tree[2])==[:number, 1] then mysimplify(tree[1])
+        elsif mysimplify(tree[1])[0]==:number and mysimplify(tree[2])[0]==:number then
+          [:number, mysimplify(tree[1])[1] * mysimplify(tree[2])[1]]
+        else [:*, mysimplify(tree[1]), mysimplify(tree[2])]
         end
-      when :+ then 
-        if Expr.build(@tree[1]).simplify==Expr.build([:number, 0]) then Expr.build(@tree[2]).simplify
-        elsif Expr.build(@tree[2]).simplify==Expr.build([:number, 0]) then Expr.build(@tree[1]).simplify
-        else self
+      when :+
+        if mysimplify(tree[1])==[:number, 0] then mysimplify(tree[2])
+        elsif mysimplify(tree[2])==[:number, 0] then mysimplify(tree[1])
+        elsif mysimplify(tree[1])[0]==:number and mysimplify(tree[2])[0]==:number then
+          [:number, mysimplify(tree[1])[1] + mysimplify(tree[2])[1]]
+        else [:+, mysimplify(tree[1]), mysimplify(tree[2])]
         end
-      when :sin then Expr.build(@tree[1]).simplify == Expr.build([:number, 0]) ? Expr.build([:number, 0]) : @tree
-      else self
-    end 
+      when :sin
+        if mysimplify(tree[1])==[:number, 0] then [:number, 0]
+        else [:sin, mysimplify(tree[1])]
+        end
+      else
+        [tree[0], mysimplify(tree[1])] # :- and :cos
+    end
   end
 
-  def derive
-    #not implemented
+  def simplify
+    Expr.build(mysimplify(@tree))
+  end
+
+  def md(variable)
+    case @tree[0]
+      when :variable then @tree[1] == variable ? [:number, 1] : [:number, 0]
+      when :number   then [:number, 0]
+      when :*
+        a = [:*, Expr.build(@tree[1]).md(variable), @tree[2]]
+        b = [:*, @tree[1], Expr.build(@tree[2]).md(variable)]
+        [:+, a, b]
+      when :+
+        [:+, Expr.build(@tree[1]).md(variable), Expr.build(@tree[2]).md(variable)]
+      when :-        then [:-, Expr.build(@tree[1]).md(variable)]
+      when :sin      then [:*, Expr.build(@tree[1]).md(variable), [:cos, @tree[1]]]
+      when :cos      then [:*, Expr.build(@tree[1]).md(variable), [:-, [:sin, @tree[1]]]]
+    end
+  end
+
+  def derive(variable)
+    Expr.build(md(variable)).simplify
   end
 
 end
@@ -73,3 +98,8 @@ p expr.evaluate(x: 2)
 p Expr.parse('x * 2 + y').evaluate(x: 3, y: 4) # => 10
 
 p Expr.parse('x + 0').simplify
+p Expr.parse('1 * x + x * 1').simplify
+p "-"*10
+p Expr.parse('x * x').derive(:x) #        => Expr.parse('x + x')
+p Expr.parse('2 * x + 3 * y').derive(:y)# => Expr.parse('3')
+p Expr.parse('sin(x)').derive(:x) #       => Expr.parse('cos(x)')
