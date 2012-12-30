@@ -36,12 +36,18 @@ class Expr
   def evaluate(env={})
     result = 0
     temp_tree = @tree.map do |i|
-      if i.instance_of? Array and i[0] == :variable then
-        [:number, env[i[1]]]
-      elsif i.instance_of? Array then
-        Expr.build(i).evaluate(env)
-      else # if it's not Array, it's an operation
-        i
+      if i.instance_of? Array then
+        case i[0]
+          when :variable then env[i[1]]
+          when :number   then i[1]
+          when :*        then Expr.build(i[1]).evaluate(env)+['*']+Expr.build(i[2]).evaluate(env)
+          when :+        then Expr.build(i[1]).evaluate(env)+['+']+Expr.build(i[2]).evaluate(env)
+          when :-        then -Expr.build(i[1]).evaluate(env)
+          when :sin      then Math.sin Expr.build(i[1]).evaluate(env)
+          when :cos      then Math.cos Expr.build(i[1]).evaluate(env)
+        end
+      else
+        
       end
     end
     temp_tree
