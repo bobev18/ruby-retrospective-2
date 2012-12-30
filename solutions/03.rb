@@ -22,35 +22,19 @@ class Expr
 
   def ==(other)
     return false if @tree.size != other.tree.size
-    result = []
-    @tree.each_index do |i|
-      if @tree[i].instance_of? Array then
-        result << Expr.build(@tree[i]) == Expr.build(other.tree[i])
-      else
-        result << @tree[i]==other.tree[i]
-      end
-    end
-    result.all?
+    @tree.flatten == other.tree.flatten
   end
 
   def evaluate(env={})
-    result = 0
-    temp_tree = @tree.map do |i|
-      if i.instance_of? Array then
-        case i[0]
-          when :variable then env[i[1]]
-          when :number   then i[1]
-          when :*        then Expr.build(i[1]).evaluate(env)+['*']+Expr.build(i[2]).evaluate(env)
-          when :+        then Expr.build(i[1]).evaluate(env)+['+']+Expr.build(i[2]).evaluate(env)
-          when :-        then -Expr.build(i[1]).evaluate(env)
-          when :sin      then Math.sin Expr.build(i[1]).evaluate(env)
-          when :cos      then Math.cos Expr.build(i[1]).evaluate(env)
-        end
-      else
-        
-      end
+    case @tree[0]
+      when :variable then env[@tree[1]]
+      when :number   then @tree[1]
+      when :*        then Expr.build(@tree[1]).evaluate(env)*Expr.build(@tree[2]).evaluate(env)
+      when :+        then Expr.build(@tree[1]).evaluate(env)+Expr.build(@tree[2]).evaluate(env)
+      when :-        then -Expr.build(@tree[1]).evaluate(env)
+      when :sin      then Math.sin Expr.build(@tree[1]).evaluate(env)
+      when :cos      then Math.cos Expr.build(@tree[1]).evaluate(env)
     end
-    temp_tree
   end
 end
 
