@@ -1,12 +1,14 @@
 class Integer
   def prime_divisors
-    # Changed to make it easier to understand
-    num = self.abs
-    result, div = [],1
+    # Changed to make it easier to read/understand
+    # I can use div=divisor, num=divident, but the current ones seem meaningful enough 
+    result, div, num = [], 1, abs
     while num>1
       div += 1
-      if num%div==0 then result << div and num/=div end
-      if div > Math.sqrt(num) then div = num-1 end
+      while num%div==0
+        result << div and num/=div 
+      end
+      div = num-1 if div > Math.sqrt(num)
     end
     result.uniq
   end
@@ -14,11 +16,13 @@ end
 
 class Range
   def fizzbuzz
-    # actually this is the method code I have posted, and the one that I had in the initial commit is
-    #    the result of my attempt to adhere to the suggestion in the comments:
-    #    fizzbuzz-а ти е сложен. Трите тернарни оператора са много гадни за четене. По-добре да го беше направил с if/else
-    #    I will change it again, as I dont like the potcome of the if/else approach
-    collect { |z| (z%3==0 and z%5==0) ? :fizzbuzz : (z%3==0 ? :fizz : (z%5==0 ? :buzz : z)) }
+    # OK, I took that one from Петко Борджуков, but it's the texbook example - it cannot be improved
+    map do |divident|
+      next :fizzbuzz if divident % 15 == 0
+      next :buzz     if divident %  5 == 0
+      next :fizz     if divident %  3 == 0
+      divident
+    end
   end
 end
 
